@@ -95,8 +95,9 @@ int main(void)
             printf("\nstub code running!\n");
         }
         esp32_stub_code_using_flag = 1;
+        esp32_stub_code_using_flag = 1;
     }
-    esp32_stub_code_using_flag = 1;
+    // esp32_stub_code_using_flag = 1;
     //STEP3 update stub code to Target
     // update_stub_code_to_target_esp8266(serial_fd);
 

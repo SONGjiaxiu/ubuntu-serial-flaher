@@ -29,6 +29,7 @@ extern "C" {
 #define WRITE_DIRECTION 0
 
 #define MD5_SIZE 16
+// #define ESP32
 
 typedef enum __attribute__((packed))
 {
@@ -168,8 +169,10 @@ typedef struct __attribute__((packed))
 {
     uint8_t failed;
     uint8_t error;
+#ifdef ESP32
     uint8_t reserved_0; // ESP32 ROM only
     uint8_t reserved_1; // ESP32 ROM only
+#endif
 } response_status_t;
 
 // #define STUB__RESERVED_SIZE  (&(((response_status_t*)0)->reserved_0))

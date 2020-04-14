@@ -146,12 +146,12 @@ static esp_loader_error_t send_cmd(int fd, const void *cmd_data, uint32_t size, 
 {
     response_t response;
     command_t command = ((command_common_t *)cmd_data)->command;
+
+#ifdef ESP32
+
     uint32_t response_lenght = 0;
-
     RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
-
     RETURN_ON_ERROR( SLIP_send(fd, (const uint8_t *)cmd_data, size) );
-
     RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
 
     if (esp32_stub_code_using_flag == 1) {
@@ -163,6 +163,14 @@ static esp_loader_error_t send_cmd(int fd, const void *cmd_data, uint32_t size, 
     }
 
     return check_response(fd, command, reg_value, &response, response_lenght);
+#else
+
+    RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
+    RETURN_ON_ERROR( SLIP_send(fd, (const uint8_t *)cmd_data, size) );
+    RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
+    return check_response(fd, command, reg_value, &response, sizeof(response));
+
+#endif
 }
 
 
@@ -171,6 +179,9 @@ static esp_loader_error_t send_cmd_with_data(int fd, const void *cmd_data, size_
 {
     response_t response;
     command_t command = ((command_common_t *)cmd_data)->command;
+
+#ifdef ESP32
+
     uint32_t response_lenght = 0;
 
     RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
@@ -187,6 +198,17 @@ static esp_loader_error_t send_cmd_with_data(int fd, const void *cmd_data, size_
     }
 
     return check_response(fd, command, NULL, &response, response_lenght);
+
+#else
+
+    RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
+    RETURN_ON_ERROR( SLIP_send(fd,(const uint8_t *)cmd_data, cmd_size) );
+    RETURN_ON_ERROR( SLIP_send(fd,data, data_size) );
+    RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
+
+    return check_response(fd, command, NULL, &response, sizeof(response));
+
+#endif    
 }
 
 
@@ -194,6 +216,9 @@ static esp_loader_error_t send_cmd_md5(int fd, const void *cmd_data, size_t cmd_
 {
     rom_md5_response_t response;
     command_t command = ((command_common_t *)cmd_data)->command;
+
+#ifdef ESP32
+
     uint32_t response_lenght = 0;
 
     RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
@@ -209,6 +234,16 @@ static esp_loader_error_t send_cmd_md5(int fd, const void *cmd_data, size_t cmd_
     }
 
     RETURN_ON_ERROR( check_response(fd, command, NULL, &response, response_lenght));
+
+#else 
+
+    RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
+    RETURN_ON_ERROR( SLIP_send(fd, (const uint8_t *)cmd_data, cmd_size) );
+    RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
+
+    RETURN_ON_ERROR( check_response(fd, command, NULL, &response, sizeof(response)));
+
+#endif 
     
     //debug
     // {
@@ -270,7 +305,9 @@ static esp_loader_error_t check_response(int fd, command_t cmd, uint32_t *reg_va
         printf("response->direction:%02x\n",  response->direction);
         printf("response->command:%02x\n",  response->command);
     } while ((response->direction != READ_DIRECTION) || (response->command != cmd));
-    
+
+#ifdef ESP32
+
     response_status_t *status;
     if (esp32_stub_code_using_flag == 1) {
         status = (response_status_t *)(resp + resp_size - (uint32_t)(&(((response_status_t*)0)->reserved_0)));
@@ -280,6 +317,11 @@ static esp_loader_error_t check_response(int fd, command_t cmd, uint32_t *reg_va
         printf("esp32_stub_code_using_flag==0\n");
     }
 
+#else 
+
+    response_status_t *status = status = (response_status_t *)(resp + resp_size - sizeof(response_status_t));
+
+#endif
     if (status->failed) {
         log_loader_internal_error(status->error);
         return ESP_LOADER_ERROR_INVALID_RESPONSE;
