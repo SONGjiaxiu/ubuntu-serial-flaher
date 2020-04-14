@@ -18,9 +18,9 @@
 #include "../include/serial.h"
 #include <stddef.h>
 #include <string.h>
-// #include <stdio.h>
+#include <stdio.h>
 
-
+extern uint8_t esp32_stub_code_using_flag;
 static uint32_t s_sequence_number = 0;
 
 static const uint8_t DELIMITER = 0xc0;
@@ -84,7 +84,7 @@ static esp_loader_error_t SLIP_receive_packet(int fd, uint8_t *buff, uint32_t si
     // Wait for delimiter
     do {
         esp_loader_error_t err = serial_read(fd, &ch, 1);
-        // printf("recv:ch:%02x==========++++\n",ch);
+        printf("recv:ch:%02x==========++++\n",ch);
         if (err != ESP_LOADER_SUCCESS) {
             return err;
         }
@@ -94,7 +94,7 @@ static esp_loader_error_t SLIP_receive_packet(int fd, uint8_t *buff, uint32_t si
 
     // Delimiter
     RETURN_ON_ERROR( serial_read(fd, &ch, 1) );
-    // printf("recv:ch:%02x--------\n",ch);
+    printf("recv:ch:%02x--------\n",ch);
     if (ch != DELIMITER) {
         return ESP_LOADER_ERROR_INVALID_RESPONSE;
     }
@@ -130,7 +130,7 @@ static esp_loader_error_t SLIP_send(int fd, const uint8_t *data, uint32_t size)
     if (to_write > 0) {
         RETURN_ON_ERROR( serial_write(fd, &data[written], to_write) );
     }
-printf("______line______%d\n",__LINE__);
+
     return ESP_LOADER_SUCCESS;
 }
 
@@ -146,6 +146,7 @@ static esp_loader_error_t send_cmd(int fd, const void *cmd_data, uint32_t size, 
 {
     response_t response;
     command_t command = ((command_common_t *)cmd_data)->command;
+    uint32_t response_lenght = 0;
 
     RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
 
@@ -153,7 +154,15 @@ static esp_loader_error_t send_cmd(int fd, const void *cmd_data, uint32_t size, 
 
     RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
 
-    return check_response(fd, command, reg_value, &response, sizeof(response));
+    if (esp32_stub_code_using_flag == 1) {
+        response_lenght = sizeof((command_common_t *)cmd_data) + (uint32_t)(&(((response_status_t*)0)->reserved_0));
+        printf("esp32_stub_code_using_flag==1\n");
+    } else {
+        response_lenght = sizeof(response);
+        printf("esp32_stub_code_using_flag==0\n");
+    }
+
+    return check_response(fd, command, reg_value, &response, response_lenght);
 }
 
 
@@ -162,13 +171,22 @@ static esp_loader_error_t send_cmd_with_data(int fd, const void *cmd_data, size_
 {
     response_t response;
     command_t command = ((command_common_t *)cmd_data)->command;
+    uint32_t response_lenght = 0;
 
     RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
     RETURN_ON_ERROR( SLIP_send(fd,(const uint8_t *)cmd_data, cmd_size) );
     RETURN_ON_ERROR( SLIP_send(fd,data, data_size) );
     RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
 
-    return check_response(fd, command, NULL, &response, sizeof(response));
+    if (esp32_stub_code_using_flag == 1) {
+        response_lenght = sizeof((command_common_t *)cmd_data) + (uint32_t)(&(((response_status_t*)0)->reserved_0));
+        printf("esp32_stub_code_using_flag==1\n");
+    } else {
+        response_lenght = sizeof(response);
+        printf("esp32_stub_code_using_flag==0\n");
+    }
+
+    return check_response(fd, command, NULL, &response, response_lenght);
 }
 
 
@@ -176,12 +194,21 @@ static esp_loader_error_t send_cmd_md5(int fd, const void *cmd_data, size_t cmd_
 {
     rom_md5_response_t response;
     command_t command = ((command_common_t *)cmd_data)->command;
+    uint32_t response_lenght = 0;
 
     RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
     RETURN_ON_ERROR( SLIP_send(fd, (const uint8_t *)cmd_data, cmd_size) );
     RETURN_ON_ERROR( SLIP_send_delimiter(fd) );
 
-    RETURN_ON_ERROR( check_response(fd, command, NULL, &response, sizeof(response)) );
+    if (esp32_stub_code_using_flag == 1) {
+        response_lenght = sizeof(response) - (uint32_t)(&(((response_status_t*)0)->reserved_0));
+        printf("esp32_stub_code_using_flag==1\n");
+    } else {
+        response_lenght = sizeof(response);
+        printf("esp32_stub_code_using_flag==0\n");
+    }
+
+    RETURN_ON_ERROR( check_response(fd, command, NULL, &response, response_lenght));
     
     //debug
     // {
@@ -233,21 +260,30 @@ static esp_loader_error_t check_response(int fd, command_t cmd, uint32_t *reg_va
     esp_loader_error_t err;
     common_response_t *response = (common_response_t *)resp;
 
+    printf("resp_size:%d\n",resp_size);
+
     do {
         err = SLIP_receive_packet(fd, resp, resp_size);
         if (err != ESP_LOADER_SUCCESS) {
             return err;
         }
-        // printf("response->direction:%02x\n",  response->direction);
-        // printf("response->command:%02x\n",  response->command);
+        printf("response->direction:%02x\n",  response->direction);
+        printf("response->command:%02x\n",  response->command);
     } while ((response->direction != READ_DIRECTION) || (response->command != cmd));
+    
+    response_status_t *status;
+    if (esp32_stub_code_using_flag == 1) {
+        status = (response_status_t *)(resp + resp_size - (uint32_t)(&(((response_status_t*)0)->reserved_0)));
+        printf("esp32_stub_code_using_flag==1\n");
+    } else {
+        status = (response_status_t *)(resp + resp_size - sizeof(response_status_t));
+        printf("esp32_stub_code_using_flag==0\n");
+    }
 
-    response_status_t *status = (response_status_t *)(resp + resp_size - sizeof(response_status_t));
-
-        if (status->failed) {
-            log_loader_internal_error(status->error);
-            return ESP_LOADER_ERROR_INVALID_RESPONSE;
-        }
+    if (status->failed) {
+        log_loader_internal_error(status->error);
+        return ESP_LOADER_ERROR_INVALID_RESPONSE;
+    }
 
     if (reg_value != NULL) {
         *reg_value = response->value;
@@ -403,6 +439,27 @@ esp_loader_error_t loader_mem_active_recv(int fd)
 }
 
 esp_loader_error_t loader_sync_cmd(int fd)
+{
+    sync_command_t sync_cmd = {
+        .common = {
+            .direction = WRITE_DIRECTION,
+            .command = SYNC,
+            .size = 36,
+            .checksum = 0
+        },
+        .sync_sequence = {
+            0x07, 0x07, 0x12, 0x20,
+            0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+            0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+            0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+            0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+        }
+    };
+
+    return send_cmd(fd, &sync_cmd, sizeof(sync_cmd), NULL);
+}
+
+esp_loader_error_t loader_sync_cmd_to_esp32(int fd)
 {
     sync_command_t sync_cmd = {
         .common = {

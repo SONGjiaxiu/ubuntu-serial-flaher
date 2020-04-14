@@ -103,6 +103,7 @@ printf("ESP_LOADER_SUCCESS: %d\n",ESP_LOADER_SUCCESS);
     return err;
 }
 
+
 // rom
 // esp_loader_error_t esp_loader_flash_start(int fd, uint32_t offset, uint32_t image_size, uint32_t block_size)
 // {
@@ -194,6 +195,31 @@ esp_loader_error_t  esp_loader_mem_active_recv(int fd)
     return loader_mem_active_recv(fd);
 }
 
+esp_loader_error_t esp_loader_memory_start(int fd, uint32_t offset, uint32_t data_size, uint32_t block_size)
+{
+    uint32_t blocks_to_write = (data_size + block_size - 1) / block_size;
+
+    loader_port_start_timer(DEFAULT_TIMEOUT);
+
+    return loader_mem_begin_cmd(fd, offset, data_size, block_size, blocks_to_write);
+}
+
+
+esp_loader_error_t esp_loader_memory_write(int fd, void *payload, uint32_t size)
+{
+    loader_port_start_timer(DEFAULT_TIMEOUT);
+
+    return loader_mem_data_cmd(fd, payload, size);
+}
+
+
+esp_loader_error_t esp_loader_memory_finish(int fd, bool execute, uint32_t entry_point_address)
+{
+    loader_port_start_timer(DEFAULT_TIMEOUT);
+
+    return loader_mem_end_cmd(fd, !execute, entry_point_address);
+}
+
 
 esp_loader_error_t esp_loader_read_register(int fd, uint32_t address, uint32_t *reg_value)
 {
@@ -245,8 +271,6 @@ esp_loader_error_t esp_loader_flash_verify(int fd)
 
     md5_final(raw_md5);
     hexify(raw_md5, hex_md5);
-
-    printf("%s\n",(char*)hex_md5);
 
     loader_port_start_timer(timeout_per_mb(s_image_size, MD5_TIMEOUT_PER_MB));
 

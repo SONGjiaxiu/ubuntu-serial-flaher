@@ -67,7 +67,7 @@ void get_type_of_chip(int fd)
 
 }
 
-void get_mac_addr_of_chip(int fd)
+void get_mac_addr_of_chip_esp8266(int fd)
 {
     address esp_otp_mac0 = 0x3ff00050;
     address esp_otp_mac1 = 0x3ff00054;
@@ -117,7 +117,7 @@ void get_mac_addr_of_chip(int fd)
             mac1_value & 0xff, (mac0_value >> 24) & 0xff);
 }
 
-void update_stub_code_to_target(int fd)
+void update_stub_code_to_target_esp8266(int fd)
 {
     printf("Uploading stub text.bin...\n");
     int32_t packet_number_mem = 0;
@@ -180,7 +180,7 @@ void update_stub_code_to_target(int fd)
 
     fclose(stub_data_bin);
 
-    err = esp_loader_mem_finish(fd, true, ENTRY);
+    err = esp_loader_mem_finish(fd, true, ENTRY_ESP8266);
     if(err != ESP_LOADER_SUCCESS) {
         printf("the stub code bin end!\n");
     }
@@ -303,10 +303,16 @@ void parsing_config_doc_download(int fd, char *config_doc_path)
 
             // debug
             // printf("-----------%s\n", store_para[count]);
-            // printf("-----------%d------------\n", count);
+            printf("---count--------%d------------\n", count);
+            printf("------addr_local-----%d------------\n", addr_local);
 
             store_addr_local[addr_local] = count;
             addr_local++;
+
+            if (addr_local >= 100){
+                printf("the number of bin files too much!\n");
+                break;
+            }
         }
         count++;
     }

@@ -117,6 +117,10 @@ esp_loader_error_t esp_loader_mem_write(int fd, void *playload, uint32_t size);
 esp_loader_error_t esp_loader_mem_finish(int fd, bool reboot, uint32_t entry);
 esp_loader_error_t  esp_loader_mem_active_recv(int fd);
 
+esp_loader_error_t esp_loader_memory_start(int fd, uint32_t offset, uint32_t data_size, uint32_t block_size);
+esp_loader_error_t esp_loader_memory_write(int fd, void *payload, uint32_t size);
+esp_loader_error_t esp_loader_memory_finish(int fd, bool execute, uint32_t entry_point_address);
+
 
 /**
   * @brief Writes register.

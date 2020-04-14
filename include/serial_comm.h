@@ -46,6 +46,8 @@ esp_loader_error_t loader_read_reg_cmd(int fd, uint32_t address, uint32_t *reg);
 
 esp_loader_error_t loader_sync_cmd(int fd);
 
+esp_loader_error_t loader_sync_cmd_to_esp32_rom(int fd);
+
 esp_loader_error_t loader_spi_attach_cmd(int fd, uint32_t config);
 
 esp_loader_error_t loader_change_baudrate_cmd(int fd, uint32_t baudrate);

@@ -154,22 +154,39 @@ typedef struct __attribute__((packed))
     uint32_t value;
 } common_response_t;
 
+//using stub running resp 
 typedef struct __attribute__((packed))
 {
     uint8_t first_active;
     uint8_t second_active;    
     uint8_t third_active;
     uint8_t fourth_active;
-} common_response_active_t;
+} common_response_active_t; 
 
 
 typedef struct __attribute__((packed))
 {
     uint8_t failed;
     uint8_t error;
-    // uint8_t reserved_0; // ESP32 ROM only
-    // uint8_t reserved_1; // ESP32 ROM only
+    uint8_t reserved_0; // ESP32 ROM only
+    uint8_t reserved_1; // ESP32 ROM only
 } response_status_t;
+
+// #define STUB__RESERVED_SIZE  (&(((response_status_t*)0)->reserved_0))
+
+typedef struct __attribute__((packed))
+{
+    uint8_t failed;
+    uint8_t error;
+    uint8_t reserved_0; // ESP32 ROM only
+    uint8_t reserved_1; // ESP32 ROM only
+} esp32_rom_response_status_t;
+
+typedef struct __attribute__((packed))
+{
+    common_response_t common;
+    esp32_rom_response_status_t status;
+} esp32_rom_response_t;
 
 typedef struct __attribute__((packed))
 {
