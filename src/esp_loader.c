@@ -160,7 +160,7 @@ esp_loader_error_t esp_loader_mem_start(int fd, uint32_t mem_offset, uint32_t im
     uint32_t nums_of_block = (image_size + block_size -1) / block_size;
     s_flash_write_size = block_size;
 
-    printf("nums_of_block:%d\n",nums_of_block);
+    // printf("nums_of_block:%d\n",nums_of_block);
 
     init_md5(mem_offset, image_size);
     loader_port_start_timer(DEFAULT_TIMEOUT);

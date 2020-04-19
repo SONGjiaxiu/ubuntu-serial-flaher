@@ -45,6 +45,7 @@ int main(void)
         printf("Cannot connect to target.\n");
     }
 
+    //STEP3 update stub code to Target
     if (reg_value == 0x00062000) {
         printf("ESP8266\n");
         update_stub_code_to_target_esp8266(serial_fd);
@@ -97,9 +98,6 @@ int main(void)
         esp32_stub_code_using_flag = 1;
         esp32_stub_code_using_flag = 1;
     }
-    // esp32_stub_code_using_flag = 1;
-    //STEP3 update stub code to Target
-    // update_stub_code_to_target_esp8266(serial_fd);
 
     // change baudrate of target
     err = esp_loader_change_baudrate(serial_fd, HIGHER_BAUD_RATE);
@@ -115,48 +113,6 @@ int main(void)
     }
 
     loader_port_delay_ms(21);
-#if 0
-    int32_t packet_number = 0;
-    ssize_t load_bin_size = 0;
-    FILE *image = get_file_size("./load_bin/esp32/hello-world.bin", &load_bin_size);
-
-    err = esp_loader_flash_start(serial_fd, 0x10000, load_bin_size, sizeof(payload_flash));
-    if (err != ESP_LOADER_SUCCESS) {
-        printf("Flash start operation failed.\n");
-        return (0);
-    }
-    int send_times = 0;
-    while(load_bin_size > 0) {
-        memset(payload_flash,0x0,sizeof(payload_flash));
-        ssize_t load_to_read = READ_BIN_MIN(load_bin_size, sizeof(payload_flash));
-        ssize_t read = fread(payload_flash, 1, load_to_read, image);
-    
-        if (read != load_to_read) {
-            printf("Error occurred while reading file.\n");
-            return (0);
-        }
-        send_times++;
-        
-        err = esp_loader_flash_write(serial_fd, payload_flash, load_to_read);
-        printf("stub loader err=%d\n",err);
-        if (err != ESP_LOADER_SUCCESS) {
-            printf("Packet could not be written.\n");
-            return (0);
-        }
-
-        load_bin_size -= load_to_read;
-    };
-
-    printf("Flash write done.\n");
-    err = esp_loader_flash_verify(serial_fd);
-    if (err != ESP_LOADER_SUCCESS) {
-        printf("MD5 does not match. err: %d\n", err);
-    } else {
-        printf("Flash verified success!\n");
-    }
-
-    fclose(image);
-#endif
 
     // parsing download.config file and download bin file to Target
     parsing_config_doc_download(serial_fd, "./download.config");

@@ -84,7 +84,7 @@ static esp_loader_error_t SLIP_receive_packet(int fd, uint8_t *buff, uint32_t si
     // Wait for delimiter
     do {
         esp_loader_error_t err = serial_read(fd, &ch, 1);
-        printf("recv:ch:%02x==========++++\n",ch);
+        // printf("recv:ch:%02x==========++++\n",ch);
         if (err != ESP_LOADER_SUCCESS) {
             return err;
         }
@@ -94,7 +94,7 @@ static esp_loader_error_t SLIP_receive_packet(int fd, uint8_t *buff, uint32_t si
 
     // Delimiter
     RETURN_ON_ERROR( serial_read(fd, &ch, 1) );
-    printf("recv:ch:%02x--------\n",ch);
+    // printf("recv:ch:%02x--------\n",ch);
     if (ch != DELIMITER) {
         return ESP_LOADER_ERROR_INVALID_RESPONSE;
     }
@@ -295,15 +295,15 @@ static esp_loader_error_t check_response(int fd, command_t cmd, uint32_t *reg_va
     esp_loader_error_t err;
     common_response_t *response = (common_response_t *)resp;
 
-    printf("resp_size:%d\n",resp_size);
+    // printf("resp_size:%d\n",resp_size);
 
     do {
         err = SLIP_receive_packet(fd, resp, resp_size);
         if (err != ESP_LOADER_SUCCESS) {
             return err;
         }
-        printf("response->direction:%02x\n",  response->direction);
-        printf("response->command:%02x\n",  response->command);
+        // printf("response->direction:%02x\n",  response->direction);
+        // printf("response->command:%02x\n",  response->command);
     } while ((response->direction != READ_DIRECTION) || (response->command != cmd));
 
 #ifdef ESP32
@@ -388,7 +388,7 @@ esp_loader_error_t loader_flash_data_cmd(int fd, const uint8_t *data, uint32_t s
         .zero_0 = 0,
         .zero_1 = 0
     };
-    printf("compute_checksum in serial_comm.c:%u\n", data_cmd.common.checksum);
+    // printf("compute_checksum in serial_comm.c:%u\n", data_cmd.common.checksum);
     return send_cmd_with_data(fd, &data_cmd, sizeof(data_cmd), data, size);
 }
 

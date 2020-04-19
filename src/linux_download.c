@@ -303,8 +303,8 @@ void parsing_config_doc_download(int fd, char *config_doc_path)
 
             // debug
             // printf("-----------%s\n", store_para[count]);
-            printf("---count--------%d------------\n", count);
-            printf("------addr_local-----%d------------\n", addr_local);
+            // printf("---count--------%d------------\n", count);
+            // printf("------addr_local-----%d------------\n", addr_local);
 
             store_addr_local[addr_local] = count;
             addr_local++;
