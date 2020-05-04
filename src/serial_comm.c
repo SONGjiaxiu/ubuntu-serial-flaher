@@ -38,7 +38,12 @@ static inline esp_loader_error_t serial_read(int fd, uint8_t *buff, size_t size)
 
 static inline esp_loader_error_t serial_write(int fd, const uint8_t *buff, size_t size)
 {
-     return loader_port_serial_write(fd, buff, size);
+    // printf("send:\n");
+    // for(int i=0; i < size; i++) {
+    //     printf("--%02x--",buff[i]);
+    // }
+
+    return loader_port_serial_write(fd, buff, size);
 }
 
 static uint8_t compute_checksum(const uint8_t *data, uint32_t size)
@@ -91,10 +96,16 @@ static esp_loader_error_t SLIP_receive_packet(int fd, uint8_t *buff, uint32_t si
     } while (ch != DELIMITER);
     
     RETURN_ON_ERROR( SLIP_receive_data(fd, buff, size) );
-
+    {
+        printf("recv:\n");
+        for(int i = 0; i < size; i++) {
+            printf("=%02x=",buff[i]);
+        }
+    }
+    // printf("recv:ch:%02x==========++++\n",ch);
     // Delimiter
     RETURN_ON_ERROR( serial_read(fd, &ch, 1) );
-    // printf("recv:ch:%02x--------\n",ch);
+    printf("recv:ch:%02x--------\n",ch);
     if (ch != DELIMITER) {
         return ESP_LOADER_ERROR_INVALID_RESPONSE;
     }
@@ -523,7 +534,7 @@ esp_loader_error_t loader_sync_cmd_to_esp32(int fd)
 }
 
 
-esp_loader_error_t loader_write_reg_cmd(int fd,uint32_t address, uint32_t value,
+esp_loader_error_t loader_write_reg_cmd(int fd, uint32_t address, uint32_t value,
                                         uint32_t mask, uint32_t delay_us)
 {
     write_reg_command_t write_cmd = {

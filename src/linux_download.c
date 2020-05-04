@@ -117,12 +117,14 @@ void get_mac_addr_of_chip_esp8266(int fd)
             mac1_value & 0xff, (mac0_value >> 24) & 0xff);
 }
 
-void update_stub_code_to_target_esp8266(int fd)
+void update_stub_code_to_target_esp8266(char *path, int fd)
 {
     printf("Uploading stub text.bin...\n");
     int32_t packet_number_mem = 0;
     ssize_t stub_text_len = 0;
-    FILE *stub_text_bin =  get_file_size("./stub_code/text.bin", &stub_text_len);
+    ////stub_code/8266_s2_stub_code_text.bin
+    //./stub_code/text.bin
+    FILE *stub_text_bin =  get_file_size(path, &stub_text_len);
     printf("stub_text_len:%lu\n",stub_text_len);
     //fclose(stub_text_bin);
     err = esp_loader_mem_start(fd, STUB_CODE_TEXT_ADDR_START, stub_text_len, sizeof(payload_mem));
@@ -181,6 +183,85 @@ void update_stub_code_to_target_esp8266(int fd)
     fclose(stub_data_bin);
 
     err = esp_loader_mem_finish(fd, true, ENTRY_ESP8266);
+    if(err != ESP_LOADER_SUCCESS) {
+        printf("the stub code bin end!\n");
+    }
+    
+    printf("stub code running?\n");
+    err = esp_loader_mem_active_recv(fd);
+    if(err != ESP_LOADER_SUCCESS) {
+        printf("the sequence OHAI error!\n");
+    }
+    printf("stub code running!\n");
+}
+
+void update_stub_code_to_target_esp8266_s2(char *path, int fd)
+{
+    printf("Uploading stub text.bin...\n");
+    int32_t packet_number_mem = 0;
+    ssize_t stub_text_len = 0;
+    ////stub_code/8266_s2_stub_code_text.bin
+    //./stub_code/text.bin
+    FILE *stub_text_bin =  get_file_size(path, &stub_text_len);
+    printf("stub_text_len:%lu\n",stub_text_len);
+    //fclose(stub_text_bin);
+    err = esp_loader_mem_start(fd, 0x40100000, stub_text_len, sizeof(payload_mem));
+    printf("err==%d\n",err);
+    if(err != ESP_LOADER_SUCCESS) {
+        printf("esp loader mem start fail!");
+    }
+
+    while(stub_text_len > 0) {
+        ssize_t to_read = READ_BIN_MIN(stub_text_len, sizeof(payload_mem));
+        ssize_t read = fread(payload_mem, 1, to_read, stub_text_bin);
+        if(read != to_read) {
+            printf("read the stub code text bin fail!\n");
+        }
+
+        err = esp_loader_mem_write(fd, payload_mem, to_read);
+        if(err = ESP_LOADER_SUCCESS) {
+            printf("the stub code text bin write to memory fail!\n");
+        }
+        
+        printf("packet: %d  written: %lu B\n", packet_number_mem++, to_read);
+        stub_text_len -= to_read;
+    }
+
+    fclose(stub_text_bin);
+
+    printf("Uploading stub data.bin...\n");
+    memcmp(payload_mem, 0x0, sizeof(payload_mem));
+
+    packet_number_mem = 0;
+    ssize_t stub_data_len = 0;
+    FILE *stub_data_bin =  get_file_size("./stub_code/8266_s2_data.bin", &stub_data_len);
+    printf("stub_data_len:%lu\n",stub_data_len);
+
+    err = esp_loader_mem_start(fd, STUB_CODE_DATA_ADDR_START, stub_data_len, sizeof(payload_mem));
+    if(err != ESP_LOADER_SUCCESS) {
+        printf("esp loader mem start fail!");
+    }
+
+    while(stub_data_len > 0) {
+        ssize_t to_read = READ_BIN_MIN(stub_data_len, sizeof(payload_mem));
+        ssize_t read = fread(payload_mem, 1, to_read, stub_data_bin);
+
+        if(read != to_read) {
+            printf("read the stub code data bin fail!\n");
+        }
+
+        err = esp_loader_mem_write(fd, payload_mem, to_read);
+        if(err = ESP_LOADER_SUCCESS) {
+            printf("the stub code data bin write to memory fail!\n");
+        }
+        
+        stub_data_len -= to_read;
+    }
+
+    fclose(stub_data_bin);
+
+
+    err = esp_loader_mem_finish(fd, true, 0x40100004);
     if(err != ESP_LOADER_SUCCESS) {
         printf("the stub code bin end!\n");
     }

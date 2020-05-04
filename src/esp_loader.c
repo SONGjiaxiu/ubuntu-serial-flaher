@@ -175,11 +175,11 @@ esp_loader_error_t esp_loader_mem_write(int fd, void *playload, uint32_t size)
     uint8_t *data = (uint8_t *)playload;
     uint32_t padding_index = size;
 
-
+#if 1
     while(padding_byte_numbers--) {
         data[padding_index++] = PADDING_PATTERN;
     }
-
+#endif
     md5_update(data, ((size + 3) & ~3));
     return loader_mem_data_cmd(fd, data, s_flash_write_size);
 }

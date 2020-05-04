@@ -13,8 +13,11 @@
 #elif
 #define SERIAL_MAX_BLOCK  4092
 #endif
+//8266
+// #define MEM_MAX_BLOCK  4096
+//8266-s2
+#define MEM_MAX_BLOCK  6144
 
-#define MEM_MAX_BLOCK  4096
 #define FILE_MAX_BUFFER 1024
 
 #define STUB_CODE_TEXT_ADDR_START 0X4010E000
@@ -33,6 +36,7 @@ uint8_t compute_checksum(const uint8_t *data, uint32_t size);
 
 void get_type_of_chip(int fd);
 void get_mac_addr_of_chip_esp8266(int fd);
-void update_stub_code_to_target_esp8266(int fd);
+void update_stub_code_to_target_esp8266(char *path, int fd);
+void update_stub_code_to_target_esp8266_s2(char *path, int fd);
 esp_loader_error_t linux_download_to_esp8266(int fd, int addr, char *path);
 void parsing_config_doc_download(int fd, char *config_doc_path);
