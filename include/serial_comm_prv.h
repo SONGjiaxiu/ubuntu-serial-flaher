@@ -134,6 +134,17 @@ typedef struct __attribute__((packed))
 typedef struct __attribute__((packed))
 {
     command_common_t common;
+    uint32_t fl_id;
+    uint32_t total_size;
+    uint32_t block_size;
+    uint32_t sector_size;
+    uint32_t page_size;
+    uint32_t status_mask;   
+} spi_set_params_command_t;
+
+typedef struct __attribute__((packed))
+{
+    command_common_t common;
     uint32_t new_baudrate;
     uint32_t old_baudrate;
 } change_baudrate_command_t;

@@ -32,6 +32,7 @@ ssize_t serial_read_n( int fd, const uint8_t  *read_buffer, ssize_t read_size, u
 ssize_t serial_write_n(int fd, const uint8_t  *write_buffer, ssize_t write_size);
 esp_loader_error_t loader_port_serial_write(int fd, const uint8_t *data, uint16_t size);
 esp_loader_error_t loader_port_serial_read(int fd, const uint8_t *data, uint16_t size, uint32_t timeout);
+esp_loader_error_t loader_spi_set_params_cmd(int fd, uint32_t fl_id, uint32_t total_size, uint32_t block_size, uint32_t sector_size, uint32_t page_size, uint32_t status_mask);
 
 void loader_port_delay_ms(uint32_t ms);
 void loader_port_enter_bootloader(int fd);

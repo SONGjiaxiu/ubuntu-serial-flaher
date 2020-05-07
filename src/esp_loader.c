@@ -354,3 +354,11 @@ void esp_loader_reset_target(int fd)
 {
     loader_port_reset_target(fd);
 }
+
+
+esp_loader_error_t esp_loader_spi_set_params(int fd, uint32_t fl_id, uint32_t total_size, uint32_t block_size, uint32_t sector_size, uint32_t page_size, uint32_t status_mask)
+{
+    loader_port_start_timer(DEFAULT_TIMEOUT);
+
+    return loader_spi_set_params_cmd(fd, fl_id, total_size, block_size, sector_size, page_size, status_mask);
+}

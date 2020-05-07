@@ -38,10 +38,10 @@ static inline esp_loader_error_t serial_read(int fd, uint8_t *buff, size_t size)
 
 static inline esp_loader_error_t serial_write(int fd, const uint8_t *buff, size_t size)
 {
-    // printf("send:\n");
-    // for(int i=0; i < size; i++) {
-    //     printf("--%02x--",buff[i]);
-    // }
+    printf("send:\n");
+    for(int i=0; i < size; i++) {
+        printf("--%02x--",buff[i]);
+    }
 
     return loader_port_serial_write(fd, buff, size);
 }
@@ -306,15 +306,15 @@ static esp_loader_error_t check_response(int fd, command_t cmd, uint32_t *reg_va
     esp_loader_error_t err;
     common_response_t *response = (common_response_t *)resp;
 
-    // printf("resp_size:%d\n",resp_size);
+    printf("resp_size:%d\n",resp_size);
 
     do {
         err = SLIP_receive_packet(fd, resp, resp_size);
         if (err != ESP_LOADER_SUCCESS) {
             return err;
         }
-        // printf("response->direction:%02x\n",  response->direction);
-        // printf("response->command:%02x\n",  response->command);
+        printf("response->direction:%02x\n",  response->direction);
+        printf("response->command:%02x\n",  response->command);
     } while ((response->direction != READ_DIRECTION) || (response->command != cmd));
 
 #ifdef ESP32
@@ -442,6 +442,31 @@ esp_loader_error_t loader_mem_begin_cmd(int fd, uint32_t mem_offset,
     s_sequence_number = 0;
 
     return send_cmd(fd, &begin_cmd, sizeof(begin_cmd), NULL);
+}
+
+esp_loader_error_t loader_spi_set_params_cmd(int fd, uint32_t fl_id,
+                                          uint32_t total_size,
+                                          uint32_t block_size,
+                                          uint32_t sector_size,
+                                          uint32_t page_size,
+                                          uint32_t status_mask)
+{
+    spi_set_params_command_t spi_set_params_cmd = {
+        .common = {
+            .direction = WRITE_DIRECTION,
+            .command = SPI_SET_PARAMS,
+            .size = 24,
+            .checksum = 0
+        },
+        .fl_id = fl_id,
+        .total_size = total_size,
+        .block_size = block_size,
+        .sector_size = sector_size,
+        .page_size = page_size,
+        .status_mask = status_mask
+    };
+
+    return send_cmd(fd, &spi_set_params_cmd, sizeof(spi_set_params_cmd), NULL);
 }
 
 esp_loader_error_t loader_mem_data_cmd(int fd, const uint8_t *data, uint32_t size)
@@ -619,6 +644,8 @@ esp_loader_error_t loader_md5_cmd(int fd, uint32_t address, uint32_t size, uint8
 
     return send_cmd_md5(fd, &md5_cmd, sizeof(md5_cmd), md5_out);
 }
+
+
 
 // __attribute__ ((weak)) void printf(const char *str)
 // {

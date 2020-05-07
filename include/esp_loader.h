@@ -185,7 +185,7 @@ esp_loader_error_t esp_loader_flash_verify(int fd);
   */
 void esp_loader_reset_target(int fd);
 
-
+esp_loader_error_t esp_loader_spi_set_params(int fd, uint32_t fl_id, uint32_t total_size, uint32_t block_size, uint32_t sector_size, uint32_t page_size, uint32_t status_mask);
 
 #ifdef __cplusplus
 }

@@ -199,22 +199,59 @@ int main(void)
 #endif
 
 // change baudrate of target
-    err = esp_loader_change_baudrate(serial_fd, HIGHER_BAUD_RATE);
-    if (err != ESP_LOADER_SUCCESS) {
-        printf("Unable to change baud rate on target.\n");
-        return (0);
-    }
+    // err = esp_loader_change_baudrate(serial_fd, HIGHER_BAUD_RATE);
+    // if (err != ESP_LOADER_SUCCESS) {
+    //     printf("Unable to change baud rate on target.\n");
+    //     return (0);
+    // }
 
-    err = serial_set_baudrate(serial_fd, HIGHER_BAUD_RATE);
-    if (err != ESP_LOADER_SUCCESS) {
-        printf("Unable to change baud rate.\n");
-        return (0);
-    }
+    // err = serial_set_baudrate(serial_fd, HIGHER_BAUD_RATE);
+    // if (err != ESP_LOADER_SUCCESS) {
+    //     printf("Unable to change baud rate.\n");
+    //     return (0);
+    // }
 
     loader_port_delay_ms(21);
 
-#if 0
+#if 1
 //CONFIG SPI REG
+    printf("\nread spi reg...\n");
+    uint32_t read_reg_value;
+    err = esp_loader_read_register(serial_fd, 0x3ff00050, &read_reg_value);
+    if (err != ESP_LOADER_SUCCESS) {
+        printf("Cannot connect to target.\n");
+    }
+
+    err = esp_loader_read_register(serial_fd, 0x3ff00054, &read_reg_value);
+    if (err != ESP_LOADER_SUCCESS) {
+        printf("Cannot connect to target.\n");
+    }
+
+    err = esp_loader_read_register(serial_fd, 0x3ff00058, &read_reg_value);
+    if (err != ESP_LOADER_SUCCESS) {
+        printf("Cannot connect to target.\n");
+    }
+
+    err = esp_loader_read_register(serial_fd, 0x3ff0005c, &read_reg_value);
+    if (err != ESP_LOADER_SUCCESS) {
+        printf("Cannot connect to target.\n");
+    }
+
+    err = esp_loader_read_register(serial_fd, 0x60000014, &read_reg_value);
+    if (err != ESP_LOADER_SUCCESS) {
+        printf("Cannot connect to target.\n");
+    }
+
+    err = esp_loader_read_register(serial_fd, 0x6000021c, &read_reg_value);
+    if (err != ESP_LOADER_SUCCESS) {
+        printf("Cannot connect to target.\n");
+    }
+
+    err = esp_loader_read_register(serial_fd, 0x60000224, &read_reg_value);
+    if (err != ESP_LOADER_SUCCESS) {
+        printf("Cannot connect to target.\n");
+    }
+
     printf("\nconfig spi reg...\n");
     err = loader_write_reg_cmd(serial_fd, 0x60000220, 0x17, 0xffffffff, 0x0);
     if (err != ESP_LOADER_SUCCESS) {
@@ -239,6 +276,16 @@ int main(void)
     err = loader_write_reg_cmd(serial_fd, 0x60000200, 0x00040000, 0xffffffff, 0x0);
     if (err != ESP_LOADER_SUCCESS) {
         printf("write reg cmd err:%d\n",__LINE__);
+    }
+
+    err = esp_loader_read_register(serial_fd, 0x60000200, &read_reg_value);
+    if (err != ESP_LOADER_SUCCESS) {
+        printf("Cannot connect to target.\n");
+    }
+
+    err = esp_loader_read_register(serial_fd, 0x60000240, &read_reg_value);
+    if (err != ESP_LOADER_SUCCESS) {
+        printf("Cannot connect to target.\n");
     }
 
 //===
@@ -291,31 +338,120 @@ int main(void)
 
 #endif
 
-    // err = loader_spi_set_params_cmd(serial_id,  );
-    // if (err != ESP_LOADER_SUCCESS) {
-    //     printf("write reg cmd err:%d\n",__LINE__);
-    // }
+    err = esp_loader_spi_set_params(serial_fd, 0, 0x1000000, 0x10000, 0x1000, 0x100, 0xffff);
+    //esp_loader_spi_set_params(int fd, uint32_t fl_id, uint32_t total_size, uint32_t block_size, uint32_t page_size, uint32_t status_mask
+    if (err != ESP_LOADER_SUCCESS) {
+        printf("write reg cmd err:%d\n",__LINE__);
+    }
 
-    // fl_id = 0
-    //     total_size = size
-    //     block_size = 64 * 1024
-    //     sector_size = 4 * 1024
-    //     page_size = 256
-    //     status_mask = 0xffff
-    //     self.check_command("set SPI params", ESP32ROM.ESP_SPI_SET_PARAMS,
-    //                        struct.pack('<IIIIII', fl_id, total_size, block_size, sector_size, page_size, status_mask))
-//ESP8266_TEST
+    
+
+   
 #if 1
+printf("__func__:%s,__LINE__:%d\r\n",__func__, __LINE__);
     int32_t packet_number = 0;
     ssize_t load_bin_size = 0;
-    FILE *image = get_file_size("./load_bin/esp8266/project_template.bin", &load_bin_size);
+    FILE *image = get_file_size("./load_bin/esp8266_s2/bootloader.bin", &load_bin_size);
+
+    err = esp_loader_flash_start(serial_fd, 0x1000, load_bin_size, sizeof(payload_flash));
+    if (err != ESP_LOADER_SUCCESS) {
+        printf("Flash start operation failed.\n");
+        return (0);
+    }
+    int send_times = 0;
+    while(load_bin_size > 0) {
+        memset(payload_flash,0x0,sizeof(payload_flash));
+        ssize_t load_to_read = READ_BIN_MIN(load_bin_size, sizeof(payload_flash));
+        ssize_t read = fread(payload_flash, 1, load_to_read, image);
+    
+        if (read != load_to_read) {
+            printf("Error occurred while reading file.\n");
+            return (0);
+        }
+        send_times++;
+        
+        err = esp_loader_flash_write(serial_fd, payload_flash, load_to_read);
+        printf("stub loader err=%d\n",err);
+        if (err != ESP_LOADER_SUCCESS) {
+            printf("Packet could not be written.\n");
+            return (0);
+        }
+
+        load_bin_size -= load_to_read;
+    };
+
+    printf("Flash write done.\n");
+    // err = esp_loader_flash_verify(serial_fd);
+    // if (err != ESP_LOADER_SUCCESS) {
+    //     printf("MD5 does not match. err: %d\n", err);
+    // } else {
+    //     printf("Flash verified success!\n");
+    // }
+
+    fclose(image);
+
+#endif
+printf("__func__:%s,__LINE__:%d\r\n",__func__, __LINE__);
+//ESP8266s2_TEST 0x8000 partition.bin
+#if 1
+
+    packet_number = 0;
+    load_bin_size = 0;
+    image = get_file_size("./load_bin/esp8266_s2/partitions_singleapp.bin", &load_bin_size);
 
     err = esp_loader_flash_start(serial_fd, 0x8000, load_bin_size, sizeof(payload_flash));
     if (err != ESP_LOADER_SUCCESS) {
         printf("Flash start operation failed.\n");
         return (0);
     }
-    int send_times = 0;
+    send_times = 0;
+    while(load_bin_size > 0) {
+        memset(payload_flash,0x0,sizeof(payload_flash));
+        ssize_t load_to_read = READ_BIN_MIN(load_bin_size, sizeof(payload_flash));
+        ssize_t read = fread(payload_flash, 1, load_to_read, image);
+    
+        if (read != load_to_read) {
+            printf("Error occurred while reading file.\n");
+            return (0);
+        }
+        send_times++;
+        
+        err = esp_loader_flash_write(serial_fd, payload_flash, load_to_read);
+        printf("stub loader err=%d\n",err);
+        if (err != ESP_LOADER_SUCCESS) {
+            printf("Packet could not be written.\n");
+            return (0);
+        }
+
+        load_bin_size -= load_to_read;
+    };
+
+    printf("Flash write done.\n");
+    // err = esp_loader_flash_verify(serial_fd);
+    // if (err != ESP_LOADER_SUCCESS) {
+    //     printf("MD5 does not match. err: %d\n", err);
+    // } else {
+    //     printf("Flash verified success!\n");
+    // }
+
+    fclose(image);
+
+#endif
+// sleep(1);
+//ESP8266s2_TEST 0x10000 app.bin
+printf("__func__:%s,__LINE__:%d\r\n",__func__, __LINE__);
+#if 1
+
+    packet_number = 0;
+    load_bin_size = 0;
+    image = get_file_size("./load_bin/esp8266_s2/project_template.bin", &load_bin_size);
+
+    err = esp_loader_flash_start(serial_fd, 0x10000, load_bin_size, sizeof(payload_flash));
+    if (err != ESP_LOADER_SUCCESS) {
+        printf("Flash start operation failed.\n");
+        return (0);
+    }
+    send_times = 0;
     while(load_bin_size > 0) {
         memset(payload_flash,0x0,sizeof(payload_flash));
         ssize_t load_to_read = READ_BIN_MIN(load_bin_size, sizeof(payload_flash));
@@ -346,6 +482,7 @@ int main(void)
     }
 
     fclose(image);
+
 #endif
 
     // parsing download.config file and download bin file to Target
